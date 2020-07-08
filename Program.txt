@@ -1,0 +1,25 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+//This is an enviroment for playing tic tac toe
+
+
+//Every player type will be a class
+
+
+namespace Tic_Tac_Toe_C_Sharp_Enviroment
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            //Create  game instance of the tic_tac_toe class
+            TicTacToe firstGame = new TicTacToe();
+
+
+        }
+    }
+}

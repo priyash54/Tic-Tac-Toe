@@ -1,0 +1,579 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Tic_Tac_Toe_C_Sharp_Enviroment
+{
+    class TicTacToe
+    {
+        //----------
+        //Properties
+        //----------
+
+        //to track how many turns hve been taken
+        private int turnNumber = 0;
+
+
+        //this will store the charcters that have been played
+        //the three characters are 'o', 'x', ' ', naught cross and space.
+        private char[,] boardState = new char[3, 3]
+        {
+        {' ',' ',' ' },
+        {' ',' ',' ' },
+        {' ',' ',' '} };
+
+        //This will become true when the game is over
+        private bool gameComplete = false;
+
+        private int gameWinner = 0; //0 for draw, 1 for player 1, 2 for player 2
+
+        //These store the player types, and are in the order in which they playe
+        private int player1ID = 0; //first player uses x
+        private int player2ID = 0; //second player uses o
+
+        Random rnd = new Random(); //used to create random numbers
+        private int swap = 0; //this will stay zero if the players move in the original order (eg player 1 moves first)
+
+
+        //Need to initialise these a in a high scope (maybe it would be better in the constructor I don't know)
+        basePlayerClass player1Object = new basePlayerClass();
+        basePlayerClass player2Object = new basePlayerClass();
+        //having a base player class is helps other people esily add in their own child player classes
+
+
+
+        //----------
+        //Constructor (for starting a new game object)
+        //----------
+
+        public TicTacToe()
+        {
+            //The user chooses the players
+            choosePlayers();
+
+
+            //Not that important, just gives an output to the console letting you know what has happened
+            printPlayerOrder();
+
+
+            Console.WriteLine("\n\nPress any key to start the game: ");
+            Console.ReadKey();
+
+
+            //Player Object Initialisation-------------------------
+            //
+            //please add your classes to this listfor player 1 and player 2
+            //
+            //After the players in the match have been decided, we need to create aninstance of the correct classes for those players
+            //(I can't think of a better way to do this, than writing out all possibilites)
+
+
+
+            //Player 1 object
+            if (player1ID == 1)
+            {
+                player1Object = new Human1(1);
+            }
+            else if (player1ID == 2)
+            {
+                player1Object = new Random2();
+            }
+
+
+            //Player 2 object
+            if (player2ID == 1)
+            {
+                player2Object = new Human1(2);
+            }
+            else if (player2ID == 2)
+            {
+                player2Object = new Random2();
+            }
+            //
+            //
+            //--------------------------------------------------
+
+
+            printBoard();
+
+            for (turnNumber = 0; turnNumber < 9; turnNumber++)
+            {
+                bool validMove = false;
+
+                if ((turnNumber + swap) % 2 == 0)
+                {
+                    //show first player the board state and get them to make a move
+                    validMove = updateBoard(player1Object.makeMove(boardState));
+                    while (!validMove) //until updateBoard returns true, keep doing that
+                    {
+                        validMove = updateBoard(player1Object.makeMove(boardState));
+                    }
+
+
+                }
+                if ((turnNumber + swap) % 2 == 1)
+                {
+                    //show first player the board state and get them to make a move
+                    validMove = updateBoard(player2Object.makeMove(boardState));
+                    while (!validMove) //until updateBoard returns true, keep doing that
+                    {
+                        validMove = updateBoard(player2Object.makeMove(boardState));
+                    }
+                }
+
+                printBoard();
+
+                //check for a victory
+                checkForVictory(); //this will update gameComplet to true if it is true
+
+
+                if (!gameComplete)
+                {
+                    Console.WriteLine("Press any key to continue to next move:");
+                    Console.ReadKey();
+                }
+                else
+                {
+                    //set gameWinner to the correct player
+                    gameWinner = ((turnNumber + swap) % 2) + 1; //ie the first player if turn number is even //swap is 1 if a swap happened
+
+                    if (gameWinner == 1)
+                    {
+                        Console.WriteLine("Player 1, {0} player was the winner!", Enum.GetName(typeof(enumplayerID), player1ID));
+                    }
+                    if (gameWinner == 2)
+                    {
+                        Console.WriteLine("Player 2, {0} player was the winner!", Enum.GetName(typeof(enumplayerID), player2ID));
+                    }
+
+
+                    Console.WriteLine("Press Any Key To Exit");
+                    Console.ReadKey();
+
+                    break;
+                }
+
+
+
+                if (gameWinner == 0)
+                {
+                    Console.WriteLine("Finished!");
+                    Console.WriteLine("The Game Ended In A Draw.");
+                }
+
+            }
+
+
+
+            //Console.WriteLine("\nDebugging, the program ends if you press any key ");
+            //Console.ReadKey();
+
+        }
+
+        //----------
+        //User Interaction Methods
+        //----------
+        private void choosePlayers()
+        {
+            bool randomFirstPlayer = false;
+            char userInput;
+
+
+            //Ask The user if the player order should be random
+            while (true)
+            {
+                Console.Clear();
+                Console.WriteLine("Would you like the first player to be choosen randomly? (y/n): ");
+
+                try
+                {
+                    userInput = char.Parse((Console.ReadLine()));
+                    if (userInput == 'y' || userInput == 'Y')
+                    {
+                        randomFirstPlayer = true;
+                        break;
+                    }
+                    else if (userInput == 'n' || userInput == 'N')
+                    {
+                        randomFirstPlayer = false;
+                        break;
+                    }
+                    else
+                    {
+                        Console.WriteLine("That wasn't a valid character. \n Please Press Enter, and then choose a valid option.");
+                        Console.ReadKey();
+                    }
+
+                }
+                catch //this get's invoked if an exception was thrown (an error happened) in the try block
+                {
+                    Console.WriteLine("That wasn't a valid character. \n Please Press Enter, and then choose a valid option.");
+                    Console.ReadKey();
+                }
+            }
+
+
+
+            if (randomFirstPlayer)
+            {
+
+                //select the first player type
+                while (true)
+                {
+                    Console.Clear();
+                    Console.WriteLine("List of Player Options: \n");
+                    Console.WriteLine("Player Type        |  ID \n");
+                    Console.WriteLine("-------------------------\n");
+                    Console.WriteLine("Human              |  1  \n");
+                    Console.WriteLine("Random PC          |  2  \n");
+
+
+                    Console.WriteLine("Please Select the ID number for Player 1: ");
+
+                    try
+                    {
+                        userInput = char.Parse((Console.ReadLine()));
+                        if (userInput == '1')
+                        {
+                            player1ID = 1;
+                            break;
+                        }
+                        else if (userInput == '2')
+                        {
+                            player1ID = 2;
+                            break;
+                        }
+                        else
+                        {
+                            Console.WriteLine("That wasn't a ID number. \n Please Press Enter, and then choose a valid option.");
+                            Console.ReadKey();
+                        }
+
+                    }
+                    catch //this get's invoked if an exception was thrown (an error happened) in the try block
+                    {
+                        Console.WriteLine("That wasn't a valid ID number. \n Please Press Enter, and then choose a valid option.");
+                        Console.ReadKey();
+                    }
+
+                }
+
+                //select the second player type
+                while (true)
+                {
+                    Console.Clear();
+                    Console.WriteLine("List of Player Options: \n");
+                    Console.WriteLine("Player Type        |  ID \n");
+                    Console.WriteLine("-------------------------\n");
+                    Console.WriteLine("Human              |  1  \n");
+                    Console.WriteLine("Random PC          |  2  \n");
+
+
+                    Console.WriteLine("Thank you, please choose the ID number for Player 2: ");
+
+                    try
+                    {
+                        userInput = char.Parse((Console.ReadLine()));
+                        if (userInput == '1')
+                        {
+                            player2ID = 1;
+                            break;
+                        }
+                        else if (userInput == '2')
+                        {
+                            player2ID = 2;
+                            break;
+                        }
+                        else
+                        {
+                            Console.WriteLine("That wasn't a ID number. \n Please Press Enter, and then choose a valid option.");
+                            Console.ReadKey();
+                        }
+
+                    }
+                    catch //this get's invoked if an exception was thrown (an error happened) in the try block
+                    {
+                        Console.WriteLine("That wasn't a valid ID number. \n Please Press Enter, and then choose a valid option.");
+                        Console.ReadKey();
+                    }
+                }
+
+                //now randomise which is the first player
+                swap = rnd.Next(0, 2); //this gives 0 or 1 (not 2)
+
+                /*
+                if (swap == 1)
+                {
+                    //we swap if we get a 1
+                    //we leave player1 be first if we get a 0
+
+                    int swapHolder = player1ID;
+                    player1ID = player2ID;
+                    player2ID = swapHolder;
+                }
+                */
+
+            }
+            //User selected order, not random
+            else
+            {
+                //select the first player type
+                while (true)
+                {
+                    Console.Clear();
+                    Console.WriteLine("List of Player Options: \n");
+                    Console.WriteLine("Player Type        |  ID \n");
+                    Console.WriteLine("-------------------------\n");
+                    Console.WriteLine("Human              |  1  \n");
+                    Console.WriteLine("Random PC          |  2  \n");
+
+                    Console.WriteLine("(This player will go first) ");
+                    Console.WriteLine("Please Select the ID number for Player 1: ");
+
+
+                    try
+                    {
+                        userInput = char.Parse((Console.ReadLine()));
+                        if (userInput == '1')
+                        {
+                            player1ID = 1;
+                            break;
+                        }
+                        else if (userInput == '2')
+                        {
+                            player1ID = 2;
+                            break;
+                        }
+                        else
+                        {
+                            Console.WriteLine("That wasn't a ID number. \n Please Press Enter, and then choose a valid option.");
+                            Console.ReadKey();
+                        }
+
+                    }
+                    catch //this get's invoked if an exception was thrown (an error happened) in the try block
+                    {
+                        Console.WriteLine("That wasn't a valid ID number. \n Please Press Enter, and then choose a valid option.");
+                        Console.ReadKey();
+                    }
+
+                }
+
+                //select the second player type
+                while (true)
+                {
+                    Console.Clear();
+                    Console.WriteLine("List of Player Options: \n");
+                    Console.WriteLine("Player Type        |  ID \n");
+                    Console.WriteLine("-------------------------\n");
+                    Console.WriteLine("Human              |  1  \n");
+                    Console.WriteLine("Random PC          |  2  \n");
+
+
+                    Console.WriteLine("Thank you, please choose the ID number for Player 2: ");
+
+                    try
+                    {
+                        userInput = char.Parse((Console.ReadLine()));
+                        if (userInput == '1')
+                        {
+                            player2ID = 1;
+                            break;
+                        }
+                        else if (userInput == '2')
+                        {
+                            player2ID = 2;
+                            break;
+                        }
+                        else
+                        {
+                            Console.WriteLine("That wasn't a ID number. \n Please Press Enter, and then choose a valid option.");
+                            Console.ReadKey();
+                        }
+
+                    }
+                    catch //this get's invoked if an exception was thrown (an error happened) in the try block
+                    {
+                        Console.WriteLine("That wasn't a valid ID number. \n Please Press Enter, and then choose a valid option.");
+                        Console.ReadKey();
+                    }
+                }
+
+
+            }
+
+
+        }
+
+
+        //----------
+        //Non User Methods
+        //----------
+
+
+        private void printPlayerOrder()
+        {
+            //Using enums... hope this works
+            Console.Clear();
+            //no swap occured
+            if (swap == 0)
+            {
+                Console.Write("Player 1 is going first. They are of type: {0}", Enum.GetName(typeof(enumplayerID), player1ID)); //Enum.GetName is awesome. it returns the string associated with the integer value
+
+
+                Console.Write("\n\nPlayer 2 is going second. They are of type: {0}", Enum.GetName(typeof(enumplayerID), player2ID));
+
+            }
+            //a swap occured
+            else
+            {
+                Console.Write("Player 2 is going first. They are of type: {0}", Enum.GetName(typeof(enumplayerID), player2ID));
+
+
+                Console.Write("\n\nPlayer 1 is going second. They are of type: {0}", Enum.GetName(typeof(enumplayerID), player1ID));
+
+            }
+
+
+
+
+            //Explicitly typing all the player types. This would be way longer 
+            /*
+            Console.Clear();
+            //no swap occured
+            if (swap == 0)
+            {
+                Console.Write("Player 1 is going first. They are of type:");
+                if (player1ID == 1)
+                    Console.Write(" Human\n");
+                if (player1ID == 2)
+                    Console.Write(" Random PC\n");
+
+                Console.Write("Player 2 is going second. They are of type:");
+                if (player2ID == 1)
+                    Console.Write(" Human\n");
+                if (player2ID == 2)
+                    Console.Write(" Random PC\n");
+            }
+            //a swap occured
+            else
+            {
+                Console.Write("Player 2 is going first. They are of type:");
+                if (player2ID == 1)
+                    Console.Write(" Human\n");
+                if (player2ID == 2)
+                    Console.Write(" Random PC\n");
+
+                Console.Write("Player 1 is going second. They are of type:");
+                if (player1ID == 1)
+                    Console.Write(" Human\n");
+                if (player1ID == 2)
+                    Console.Write(" Random PC\n");
+            }
+            */
+        }
+
+        //the agent should return a location given by i and j
+        private bool updateBoard(int[] location)
+        {
+            if (boardState[location[0], location[1]] != ' ')
+            {
+                return false; //not a legal move
+            }
+            else if (turnNumber % 2 == 0)
+            {
+                boardState[location[0], location[1]] = 'x';
+            }
+            else //(turnNumber % 2 == 1)
+            {
+                boardState[location[0], location[1]] = 'o';
+            }
+
+            return true; //a legal move was made
+        }
+
+
+        private void printBoard()
+        {
+            Console.Clear();
+
+            Console.WriteLine("Gameboard:");
+            Console.WriteLine(" {0} | {1} | {2}", boardState[0, 0], boardState[0, 1], boardState[0, 2]);
+            Console.WriteLine("------------");
+            Console.WriteLine(" {0} | {1} | {2}", boardState[1, 0], boardState[1, 1], boardState[1, 2]);
+            Console.WriteLine("------------");
+            Console.WriteLine(" {0} | {1} | {2}", boardState[2, 0], boardState[2, 1], boardState[2, 2]);
+            Console.WriteLine("\n");
+
+        }
+
+
+        private void checkForVictory()
+        {
+            //check all 4 lines passing through the middle
+            if (boardState[1, 1] != ' ') //then there is a x or an o there
+            {
+                //diagonal from top left
+                if (boardState[1, 1] == boardState[0, 0] && boardState[0, 0] == boardState[2, 2])
+                {
+                    gameComplete = true;
+                }
+                //diagonal from top right
+                if (boardState[1, 1] == boardState[0, 2] && boardState[0, 2] == boardState[2, 0])
+                {
+                    gameComplete = true;
+                }
+                //middle row
+                if (boardState[1, 1] == boardState[1, 0] && boardState[1, 0] == boardState[1, 2])
+                {
+                    gameComplete = true;
+                }
+                //middle column
+                if (boardState[1, 1] == boardState[0, 1] && boardState[1, 1] == boardState[2, 1])
+                {
+                    gameComplete = true;
+                }
+            }
+
+            //Check the four lines that don't pass through the middle
+            if (boardState[0, 0] != ' ') //then there is a x or an o there
+            {
+                if (boardState[0, 0] == boardState[0, 1] && boardState[0, 1] == boardState[0, 2])
+                {
+                    gameComplete = true;
+                }
+            }
+            if (boardState[0, 0] != ' ') //then there is a x or an o there
+            {
+                if (boardState[0, 0] == boardState[1, 0] && boardState[1, 0] == boardState[2, 0])
+                {
+                    gameComplete = true;
+                }
+            }
+            if (boardState[2, 2] != ' ') //then there is a x or an o there
+            {
+                if (boardState[2, 2] == boardState[2, 1] && boardState[2, 1] == boardState[2, 0])
+                {
+                    gameComplete = true;
+                }
+            }
+            if (boardState[2, 2] != ' ') //then there is a x or an o there
+            {
+                if (boardState[0, 2] == boardState[1, 2] && boardState[1, 2] == boardState[2, 2])
+                {
+                    gameComplete = true;
+                }
+            }
+        }
+    }
+
+    enum enumplayerID
+    {
+        Human = 1,
+        Random_PC = 2
+    }
+
+
+}
